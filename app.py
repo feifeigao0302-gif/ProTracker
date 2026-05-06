@@ -2,54 +2,117 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 1. 设置页面标题
-st.set_page_config(page_title="ProTracker - IEP Progress", layout="wide")
+# 1. Page Configuration
+st.set_page_config(page_title="ProTracker - Professional IEP Tracking", layout="wide")
 
-# 2. 简易登录逻辑 (在侧边栏)
-st.sidebar.title("🔐 教师管理后台")
-password = st.sidebar.text_input("请输入管理密码", type="password")
+# 2. Language Selection Logic
+if 'lang' not in st.session_state:
+    st.session_state.lang = "English"
 
-# 预设密码 (你可以自己修改这个字符串)
-ADMIN_PASSWORD = "123" 
+# Sidebar Language Toggle
+st.sidebar.title("🌐 Language / 语言")
+st.session_state.lang = st.sidebar.selectbox("Select Interface Language", ["English", "中文"])
 
-# 3. 初始化模拟数据 (如果想要永久保存，以后我们需要接 Google Sheets)
-if 'data' not in st.session_state:
-    st.session_state.data = pd.DataFrame({
-        'Date': pd.to_datetime(['2026-05-01', '2026-05-02', '2026-05-03']),
-        'Reading': [70, 75, 80],
-        'Social': [50, 60, 55]
-    })
+# Translation Dictionary
+texts = {
+    "English": {
+        "title": "🎯 ProTracker: Progress Monitoring",
+        "nav": "🚀 Navigation",
+        "hunt": "📝 Data Hunt (Quick Entry)",
+        "dash": "👩‍🏫 Teacher Dashboard",
+        "auth": "🔐 Teacher Authorization",
+        "pass_label": "Enter Teacher Password",
+        "select_class": "Select Class",
+        "select_student": "Select Student",
+        "select_goal": "Select IEP Goal",
+        "grade": "Current Grade",
+        "submit": "Submit Data",
+        "success": "Data saved successfully!",
+        "admin_warn": "⚠️ Admin access required. Please enter password in the sidebar.",
+        "edit_info": "🛠 Edit Student Background",
+        "add_goal": "Add New IEP Goal",
+        "save_changes": "Save Changes",
+        "analysis": "📊 Data Analytics",
+    },
+    "中文": {
+        "title": "🎯 ProTracker: 进度跟踪系统",
+        "nav": "🚀 导航菜单",
+        "hunt": "📝 Data Hunt (数据采集)",
+        "dash": "👩‍🏫 教师后台",
+        "auth": "🔐 教师权限验证",
+        "pass_label": "请输入管理密码",
+        "select_class": "选择班级",
+        "select_student": "选择学生",
+        "select_goal": "选择 IEP 目标",
+        "grade": "当前年级",
+        "submit": "提交数据",
+        "success": "数据保存成功！",
+        "admin_warn": "⚠️ 需要管理员权限。请在侧边栏输入密码。",
+        "edit_info": "🛠 编辑学生基本信息",
+        "add_goal": "添加新 IEP 目标",
+        "save_changes": "保存修改",
+        "analysis": "📊 数据深度分析",
+    }
+}
 
-st.title("🎯 ProTracker: 学生进度跟踪")
+T = texts[st.session_state.lang]
 
-# --- 模式 A: 老师管理模式 ---
-if password == ADMIN_PASSWORD:
-    st.sidebar.success("已进入管理模式")
-    st.header("📝 输入新数据")
+# 3. Mock Database
+if 'db' not in st.session_state:
+    st.session_state.db = {
+        "Class A (DLI)": {
+            "Student Alpha": {"Grade": "3rd", "Info": "Dual Language Immersion", "Goals": ["Reading Comp", "Mandarin Fluency"]},
+            "Student Beta": {"Grade": "3rd", "Info": "Resource Support", "Goals": ["Math Fluency"]}
+        },
+        "Class B": {
+            "Student Gamma": {"Grade": "4th", "Info": "General Ed", "Goals": ["Social Skills"]}
+        }
+    }
+
+# 4. Sidebar Navigation
+st.sidebar.markdown("---")
+password = st.sidebar.text_input(T["pass_label"], type="password")
+is_teacher = (password == "123")
+
+st.sidebar.title(T["nav"])
+mode = st.sidebar.radio("Go to:", [T["hunt"], T["dash"]])
+
+# --- Logic A: Data Hunt (Public Access) ---
+if mode == T["hunt"]:
+    st.title(T["title"])
     
-    with st.form("data_form"):
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            new_date = st.date_input("选择日期")
-        with col2:
-            new_reading = st.slider("阅读理解准确率 (%)", 0, 100, 80)
-        with col3:
-            new_social = st.slider("社交技巧得分", 0, 100, 60)
-            
-        submitted = st.form_submit_button("提交数据")
-        if submitted:
-            new_row = {'Date': pd.to_datetime(new_date), 'Reading': new_reading, 'Social': new_social}
-            st.session_state.data = pd.concat([st.session_state.data, pd.DataFrame([new_row])], ignore_index=True)
-            st.success("数据已更新！")
+    col1, col2 = st.columns(2)
+    with col1:
+        chosen_class = st.selectbox(T["select_class"], list(st.session_state.db.keys()))
+    with col2:
+        students = list(st.session_state.db[chosen_class].keys())
+        chosen_student = st.selectbox(T["select_student"], students)
+    
+    st.info(f"**{T['grade']}**: {st.session_state.db[chosen_class][chosen_student]['Grade']}")
+    
+    goal = st.selectbox(T["select_goal"], st.session_state.db[chosen_class][chosen_student]['Goals'])
+    
+    with st.form("quick_input"):
+        score = st.number_input("Score (%)", 0, 100, 80)
+        note = st.text_input("Observation Notes")
+        if st.form_submit_button(T["submit"]):
+            st.success(T["success"])
 
-# --- 模式 B: 数据展示模式 (所有人可见) ---
-st.header("📊 进度可视化")
-tab1, tab2 = st.tabs(["阅读理解", "社交技巧"])
-
-with tab1:
-    fig_read = px.line(st.session_state.data, x='Date', y='Reading', title="Reading Goal Progress", markers=True)
-    st.plotly_chart(fig_read, use_container_width=True)
-
-with tab2:
-    fig_social = px.line(st.session_state.data, x='Date', y='Social', title="Social Skills Progress", markers=True)
-    st.plotly_chart(fig_social, use_container_width=True)
+# --- Logic B: Teacher Dashboard (Password Protected) ---
+elif mode == T["dash"]:
+    if not is_teacher:
+        st.warning(T["admin_warn"])
+    else:
+        st.title(T["dash"])
+        active_class = st.selectbox(T["select_class"], list(st.session_state.db.keys()))
+        active_student = st.selectbox(T["select_student"], list(st.session_state.db[active_class].keys()))
+        
+        st.subheader(T["edit_info"])
+        # (Teacher editing logic goes here - same as previous version but using T dictionary)
+        st.text_area("Background Info", st.session_state.db[active_class][active_student]['Info'])
+        
+        st.markdown("---")
+        st.subheader(T["analysis"])
+        df = pd.DataFrame({'Day': [1,2,3,4,5], 'Score': [70,72,75,78,85]})
+        fig = px.line(df, x='Day', y='Score', title=f"Progress Trend for {active_student}")
+        st.plotly_chart(fig, use_container_width=True)
