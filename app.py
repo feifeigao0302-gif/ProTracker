@@ -3,126 +3,139 @@ import pandas as pd
 import plotly.express as px
 
 # 1. Page Configuration
-st.set_page_config(page_title="ProTracker - Professional IEP Tracking", layout="wide")
+st.set_page_config(page_title="ProTracker - IEP Management", layout="wide")
 
-# 2. Language Selection Logic
+# 2. Language Selection
 if 'lang' not in st.session_state:
     st.session_state.lang = "English"
 
-# Sidebar Language Toggle
-st.sidebar.title("🌐 Language / 语言 / Idioma")
-st.session_state.lang = st.sidebar.selectbox("Select Interface Language", ["English", "中文", "Español"])
+st.sidebar.title("🌐 Language")
+st.session_state.lang = st.sidebar.selectbox("Select Language", ["English", "中文", "Español"])
 
-# Translation Dictionary
+# 3. Enhanced Translation Dictionary (Added Goal Details)
 texts = {
     "English": {
-        "title": "🎯 ProTracker: Progress Monitoring",
-        "nav": "🚀 Navigation",
-        "hunt": "📝 Data Hunt (Quick Entry)",
+        "title": "🎯 ProTracker: IEP Progress",
+        "hunt": "📝 Data Hunt",
         "dash": "👩‍🏫 Teacher Dashboard",
-        "pass_label": "Enter Teacher Password",
+        "pass_label": "Password",
         "select_class": "Select Class",
         "select_student": "Select Student",
-        "select_goal": "Select IEP Goal",
-        "grade": "Current Grade",
-        "submit": "Submit Data",
-        "success": "Data saved successfully!",
-        "admin_warn": "⚠️ Admin access required. Please enter password in the sidebar.",
-        "edit_info": "🛠 Edit Student Background",
-        "analysis": "📊 Data Analytics",
+        "goal_details": "📋 Goal Specifications",
+        "baseline": "Baseline (%)",
+        "target": "Target (%)",
+        "criteria": "Success Criteria",
+        "method": "Measurement Method",
+        "save_goal": "Save/Update Goal Details",
+        "add_new_goal": "➕ Add New Goal Name",
+        "current_goals": "Current IEP Goals",
+        "data_entry": "📥 Data Entry",
+        "analysis": "📊 Analytics",
     },
     "中文": {
-        "title": "🎯 ProTracker: 进度跟踪系统",
-        "nav": "🚀 导航菜单",
+        "title": "🎯 ProTracker: IEP 进度管理",
         "hunt": "📝 Data Hunt (数据采集)",
-        "dash": "👩‍🏫 教师后台",
-        "pass_label": "请输入管理密码",
+        "dash": "👩‍🏫 教师后台管理",
+        "pass_label": "管理密码",
         "select_class": "选择班级",
         "select_student": "选择学生",
-        "select_goal": "选择 IEP 目标",
-        "grade": "当前年级",
-        "submit": "提交数据",
-        "success": "数据保存成功！",
-        "admin_warn": "⚠️ 需要管理员权限。请在侧边栏输入密码。",
-        "edit_info": "🛠 编辑学生基本信息",
-        "analysis": "📊 数据深度分析",
+        "goal_details": "📋 目标详细说明",
+        "baseline": "基准线 (Baseline %)",
+        "target": "目标值 (Target %)",
+        "criteria": "达标标准 (Criteria)",
+        "method": "评估方法 (Method)",
+        "save_goal": "保存/更新目标详情",
+        "add_new_goal": "➕ 添加新目标名称",
+        "current_goals": "当前年度 IEP 目标",
+        "data_entry": "📥 数据记录",
+        "analysis": "📊 数据趋势分析",
     },
     "Español": {
-        "title": "🎯 ProTracker: Monitoreo de Progreso",
-        "nav": "🚀 Navegación",
-        "hunt": "📝 Data Hunt (Entrada Rápida)",
+        "title": "🎯 ProTracker: Progreso del IEP",
+        "hunt": "📝 Data Hunt",
         "dash": "👩‍🏫 Panel del Maestro",
-        "pass_label": "Ingrese la contraseña del maestro",
+        "pass_label": "Contraseña",
         "select_class": "Seleccionar Clase",
         "select_student": "Seleccionar Estudiante",
-        "select_goal": "Seleccionar Meta del IEP",
-        "grade": "Grado Actual",
-        "submit": "Enviar Datos",
-        "success": "¡Datos guardados con éxito!",
-        "admin_warn": "⚠️ Se requiere acceso de administrador. Ingrese la contraseña en la barra lateral.",
-        "edit_info": "🛠 Editar Información del Estudiante",
-        "analysis": "📊 Análisis de Datos",
+        "goal_details": "📋 Especificaciones de la Meta",
+        "baseline": "Línea de Base (%)",
+        "target": "Meta Final (%)",
+        "criteria": "Criterios de Éxito",
+        "method": "Método de Medición",
+        "save_goal": "Guardar Detalles de la Meta",
+        "add_new_goal": "➕ Agregar Nuevo Nombre de Meta",
+        "current_goals": "Metas Actuales del IEP",
+        "data_entry": "📥 Entrada de Datos",
+        "analysis": "📊 Análisis",
     }
 }
 
 T = texts[st.session_state.lang]
 
-# 3. Mock Database
+# 4. Professional Database Structure
 if 'db' not in st.session_state:
+    # We store goals as a dictionary to hold their specific details
     st.session_state.db = {
         "Class A (DLI)": {
-            "Student Alpha": {"Grade": "3rd", "Info": "Dual Language Immersion", "Goals": ["Reading Comp", "Mandarin Fluency"]},
-            "Student Beta": {"Grade": "3rd", "Info": "Resource Support", "Goals": ["Math Fluency"]}
-        },
-        "Class B": {
-            "Student Gamma": {"Grade": "4th", "Info": "General Ed", "Goals": ["Social Skills"]}
+            "Student Alpha": {
+                "Grade": "3rd", 
+                "Goals": {
+                    "Reading Comp": {"baseline": 30, "target": 80, "criteria": "4/5 trials", "method": "Wh- Questions"},
+                    "Mandarin Fluency": {"baseline": 20, "target": 70, "criteria": "100 characters", "method": "Oral reading"}
+                }
+            }
         }
     }
 
-# 4. Sidebar Navigation
+# 5. Sidebar Auth & Navigation
 st.sidebar.markdown("---")
-# Password updated to 1234
 password = st.sidebar.text_input(T["pass_label"], type="password")
 is_teacher = (password == "1234")
 
-st.sidebar.title(T["nav"])
-mode = st.sidebar.radio("Go to:", [T["hunt"], T["dash"]])
+mode = st.sidebar.radio("Navigation", [T["hunt"], T["dash"]])
 
-# --- Logic A: Data Hunt (Public Access) ---
+# --- Logic A: Data Hunt (Public View) ---
 if mode == T["hunt"]:
     st.title(T["title"])
-    
-    col1, col2 = st.columns(2)
-    with col1:
+    c1, c2 = st.columns(2)
+    with c1:
         chosen_class = st.selectbox(T["select_class"], list(st.session_state.db.keys()))
-    with col2:
+    with c2:
         students = list(st.session_state.db[chosen_class].keys())
         chosen_student = st.selectbox(T["select_student"], students)
     
-    st.info(f"**{T['grade']}**: {st.session_state.db[chosen_class][chosen_student]['Grade']}")
+    st.divider()
     
-    goal = st.selectbox(T["select_goal"], st.session_state.db[chosen_class][chosen_student]['Goals'])
+    # Display Student Info
+    student_data = st.session_state.db[chosen_class][chosen_student]
+    goal_names = list(student_data["Goals"].keys())
+    selected_goal = st.selectbox(T["current_goals"], goal_names)
     
-    with st.form("quick_input"):
-        score = st.number_input("Score (%) / Puntaje (%)", 0, 100, 80)
-        note = st.text_input("Observation Notes / Observaciones")
-        if st.form_submit_button(T["submit"]):
-            st.success(T["success"])
+    # Show Specific Goal Info for the Data Collector to see
+    details = student_data["Goals"][selected_goal]
+    st.info(f"**{T['goal_details']}**: Baseline: {details['baseline']}% | Target: {details['target']}% | Method: {details['method']}")
 
-# --- Logic B: Teacher Dashboard (Password Protected) ---
+    with st.form("input_form"):
+        score = st.number_input("Performance (%)", 0, 100, 80)
+        note = st.text_input("Observations")
+        if st.form_submit_button("Submit"):
+            st.success("Successfully Recorded!")
+
+# --- Logic B: Teacher Dashboard (Admin View) ---
 elif mode == T["dash"]:
     if not is_teacher:
-        st.warning(T["admin_warn"])
+        st.warning("Admin Access Required")
     else:
         st.title(T["dash"])
-        active_class = st.selectbox(T["select_class"], list(st.session_state.db.keys()))
-        active_student = st.selectbox(T["select_student"], list(st.session_state.db[active_class].keys()))
         
-        st.subheader(T["edit_info"])
-        st.text_area("Background Info", st.session_state.db[active_class][active_student]['Info'])
+        # Select Student to manage
+        t_class = st.selectbox(T["select_class"], list(st.session_state.db.keys()))
+        t_student = st.selectbox(T["select_student"], list(st.session_state.db[t_class].keys()))
         
-        st.markdown("---")
-        st.subheader(T["analysis"])
-        df = pd.DataFrame({'Day': [1,2,3,4,5], 'Score': [70,72,75,78,85]})
-        fig = px.line(df, x='Day', y='Score', title=f"Progress Trend for {active_student}")
-        st.plotly_chart(fig, use_container_width=True)
+        st.divider()
+        
+        # 1. Add/Edit Goal Names
+        st.subheader(T["add_new_goal"])
+        new_g_name = st.text_input("Goal Name")
+        if st.button("Add to Student Profile") and new_g_name:
+            if new_g_name not in st.session_state.db
