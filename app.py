@@ -10,8 +10,8 @@ if 'lang' not in st.session_state:
     st.session_state.lang = "English"
 
 # Sidebar Language Toggle
-st.sidebar.title("🌐 Language / 语言")
-st.session_state.lang = st.sidebar.selectbox("Select Interface Language", ["English", "中文"])
+st.sidebar.title("🌐 Language / 语言 / Idioma")
+st.session_state.lang = st.sidebar.selectbox("Select Interface Language", ["English", "中文", "Español"])
 
 # Translation Dictionary
 texts = {
@@ -20,7 +20,6 @@ texts = {
         "nav": "🚀 Navigation",
         "hunt": "📝 Data Hunt (Quick Entry)",
         "dash": "👩‍🏫 Teacher Dashboard",
-        "auth": "🔐 Teacher Authorization",
         "pass_label": "Enter Teacher Password",
         "select_class": "Select Class",
         "select_student": "Select Student",
@@ -30,8 +29,6 @@ texts = {
         "success": "Data saved successfully!",
         "admin_warn": "⚠️ Admin access required. Please enter password in the sidebar.",
         "edit_info": "🛠 Edit Student Background",
-        "add_goal": "Add New IEP Goal",
-        "save_changes": "Save Changes",
         "analysis": "📊 Data Analytics",
     },
     "中文": {
@@ -39,7 +36,6 @@ texts = {
         "nav": "🚀 导航菜单",
         "hunt": "📝 Data Hunt (数据采集)",
         "dash": "👩‍🏫 教师后台",
-        "auth": "🔐 教师权限验证",
         "pass_label": "请输入管理密码",
         "select_class": "选择班级",
         "select_student": "选择学生",
@@ -49,9 +45,23 @@ texts = {
         "success": "数据保存成功！",
         "admin_warn": "⚠️ 需要管理员权限。请在侧边栏输入密码。",
         "edit_info": "🛠 编辑学生基本信息",
-        "add_goal": "添加新 IEP 目标",
-        "save_changes": "保存修改",
         "analysis": "📊 数据深度分析",
+    },
+    "Español": {
+        "title": "🎯 ProTracker: Monitoreo de Progreso",
+        "nav": "🚀 Navegación",
+        "hunt": "📝 Data Hunt (Entrada Rápida)",
+        "dash": "👩‍🏫 Panel del Maestro",
+        "pass_label": "Ingrese la contraseña del maestro",
+        "select_class": "Seleccionar Clase",
+        "select_student": "Seleccionar Estudiante",
+        "select_goal": "Seleccionar Meta del IEP",
+        "grade": "Grado Actual",
+        "submit": "Enviar Datos",
+        "success": "¡Datos guardados con éxito!",
+        "admin_warn": "⚠️ Se requiere acceso de administrador. Ingrese la contraseña en la barra lateral.",
+        "edit_info": "🛠 Editar Información del Estudiante",
+        "analysis": "📊 Análisis de Datos",
     }
 }
 
@@ -71,8 +81,9 @@ if 'db' not in st.session_state:
 
 # 4. Sidebar Navigation
 st.sidebar.markdown("---")
+# Password updated to 1234
 password = st.sidebar.text_input(T["pass_label"], type="password")
-is_teacher = (password == "123")
+is_teacher = (password == "1234")
 
 st.sidebar.title(T["nav"])
 mode = st.sidebar.radio("Go to:", [T["hunt"], T["dash"]])
@@ -93,8 +104,8 @@ if mode == T["hunt"]:
     goal = st.selectbox(T["select_goal"], st.session_state.db[chosen_class][chosen_student]['Goals'])
     
     with st.form("quick_input"):
-        score = st.number_input("Score (%)", 0, 100, 80)
-        note = st.text_input("Observation Notes")
+        score = st.number_input("Score (%) / Puntaje (%)", 0, 100, 80)
+        note = st.text_input("Observation Notes / Observaciones")
         if st.form_submit_button(T["submit"]):
             st.success(T["success"])
 
@@ -108,7 +119,6 @@ elif mode == T["dash"]:
         active_student = st.selectbox(T["select_student"], list(st.session_state.db[active_class].keys()))
         
         st.subheader(T["edit_info"])
-        # (Teacher editing logic goes here - same as previous version but using T dictionary)
         st.text_area("Background Info", st.session_state.db[active_class][active_student]['Info'])
         
         st.markdown("---")
