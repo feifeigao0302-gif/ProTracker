@@ -24,6 +24,13 @@ ProTracker is designed with a **3-tier navigation logic** to minimize cognitive 
 3. **Action Hub (L3) - Data Interaction**:
    - **Data Hunt**: A "zero-typing" entry interface optimized for rapid, real-time data collection in busy classroom environments.
    - **Data Analyst**: Instant visualization of student progress. It transforms raw data into trend lines and achievement curves using Python-based analytics to support data-driven instruction.
+   - ### 🚀 系统工作流 (Workflow Logic)
+
+| 级别 | 模块名称 | 设计目的 (Purpose) |
+| :--- | :--- | :--- |
+| **L1** | **Dashboard** | **快速索引**：概览所有学生信息及数据采集提醒（Urgent Alerts）。 |
+| **L2** | **Goal Management** | **目标管理**：展示选定学生的所有 IEP 目标列表，支持分类查看。 |
+| **L3** | **Action Hub** | **核心中心**：在 **Data Hunt**（数据录入）与 **Analyst**（数据可视化）间切换。 |
 ## Tech Stack
 - **Frontend**: Streamlit / Flask (Planned for rapid prototyping)
 - **Data Management**: SQL (SQLite for local storage, PostgreSQL for cloud)
