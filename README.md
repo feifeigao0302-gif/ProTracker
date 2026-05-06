@@ -9,15 +9,21 @@ ProTracker is designed to leverage business analytics to transform complex Speci
 - **IEP Goal Management**: Quantify abstract teaching goals into measurable metrics.
 - **Progress Trend Analysis**: Visualize student progress trajectories through dynamic charts.
 - **Automated Data Collection**: Simplify daily data entry workflows.
-- ## Core Features & Workflow
+-## 🚀 Core Features & Workflow
 
-ProTracker follows a **3-tier navigation logic** to minimize cognitive load:
+ProTracker is designed with a **3-tier navigation logic** to minimize cognitive load and maximize classroom efficiency:
 
-1. **Dashboard (L1)**: At-a-glance summary of student profiles and data-collection status.
-2. **Goal Management (L2)**: Organized view of all IEP goals per student.
-3. **Action Hub (L3)**:
-    - **Data Hunt**: A "zero-typing" entry interface for rapid data collection.
-    - **Data Analyst**: Real-time visualization and trend prediction using Python-based analytics.
+1. **Dashboard (L1) - Student Overview**: 
+   - Provides an at-a-glance summary of all student profiles.
+   - Highlighting data-collection status and urgent alerts (e.g., goals with missing data).
+
+2. **Goal Management (L2) - IEP Tracking**: 
+   - Displays a comprehensive list of Individualized Education Program (IEP) goals for the selected student.
+   - Categorizes goals by domain (Academic, Social, Behavioral) for quick access.
+
+3. **Action Hub (L3) - Data Interaction**:
+   - **Data Hunt**: A "zero-typing" entry interface optimized for rapid, real-time data collection in busy classroom environments.
+   - **Data Analyst**: Instant visualization of student progress. It transforms raw data into trend lines and achievement curves using Python-based analytics to support data-driven instruction.
 ## Tech Stack
 - **Data Management**: SQL
 - **Visualization**: Tableau / Power BI
