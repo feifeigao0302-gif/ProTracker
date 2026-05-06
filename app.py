@@ -138,4 +138,36 @@ elif mode == T["dash"]:
         st.subheader(T["add_new_goal"])
         new_g_name = st.text_input("Goal Name")
         if st.button("Add to Student Profile") and new_g_name:
-            if new_g_name not in st.session_state.db
+            if new_g_name not in st.session_state.db[t_class][t_student]["Goals"]:
+                st.session_state.db[t_class][t_student]["Goals"][new_g_name] = {"baseline": 0, "target": 0, "criteria": "", "method": ""}
+                st.rerun()
+
+        st.divider()
+
+        # 2. EDIT GOAL DETAILS
+        st.subheader(T["goal_details"])
+        edit_goal = st.selectbox("Select Goal to Edit Details", list(st.session_state.db[t_class][t_student]["Goals"].keys()))
+        
+        g_data = st.session_state.db[t_class][t_student]["Goals"][edit_goal]
+        
+        with st.container(border=True):
+            col1, col2 = st.columns(2)
+            with col1:
+                b_line = st.number_input(T["baseline"], value=g_data["baseline"])
+                t_line = st.number_input(T["target"], value=g_data["target"])
+            with col2:
+                crit = st.text_input(T["criteria"], value=g_data["criteria"])
+                meth = st.text_input(T["method"], value=g_data["method"])
+            
+            if st.button(T["save_goal"]):
+                st.session_state.db[t_class][t_student]["Goals"][edit_goal] = {
+                    "baseline": b_line, "target": t_line, "criteria": crit, "method": meth
+                }
+                st.success("Goal Details Updated!")
+
+        # 3. Analytics
+        st.divider()
+        st.subheader(T["analysis"])
+        chart_df = pd.DataFrame({'Day': [1,2,3,4,5], 'Score': [b_line, b_line+5, b_line+10, b_line+15, t_line]})
+        fig = px.line(chart_df, x='Day', y='Score', markers=True)
+        st.plotly_chart(fig, use_container_width=True)
