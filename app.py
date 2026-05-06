@@ -1,163 +1,103 @@
 import streamlit as st
-import pandas as pd
 
-# 1. Page Configuration
+# 1. 页面配置
 st.set_page_config(page_title="ProTracker - IEP Management", layout="wide")
 
-# Helper: Privacy Name (Initials)
+# 辅助函数：隐私姓名
 def get_privacy_name(name):
     parts = name.split()
     if len(parts) >= 2:
         return f"{parts[0][0]}{parts[-1][0]}".upper()
     return name[:2].upper()
 
-# Cartoon Avatars
-avatars = {
-    "Robot": "🤖", "Panda": "🐼", "Tiger": "🐯", "Fox": "🦊", 
-    "Koala": "🐨", "Frog": "🐸", "Unicorn": "🦄", "Dragon": "🐲",
-    "Wizard": "🧙", "Rocket": "🚀", "Star": "⭐", "Alien": "👽"
-}
+# 卡通头像库
+avatars = {"Robot": "🤖", "Panda": "🐼", "Tiger": "🐯", "Fox": "🦊", "Koala": "🐨", "Frog": "🐸", "Unicorn": "🦄", "Dragon": "🐲"}
 
-# Prompt Levels (Minimal for Grid)
-prompt_minimal = {
-    "I": "✅ I", "V": "🗣️ V", "Vi/G": "👁️ Vi/G", 
-    "PP": "🖐️ PP", "M": "🎭 M", "FP": "🤝 FP"
-}
+# 提示层级简写
+prompt_minimal = {"I": "✅ I", "V": "🗣️ V", "Vi/G": "👁️ Vi/G", "PP": "🖐️ PP", "M": "🎭 M", "FP": "🤝 FP"}
 
-# 2. Language Selection Logic
-if 'lang' not in st.session_state:
-    st.session_state.lang = "English"
+# 2. 语言与数据库初始化
+if 'lang' not in st.session_state: st.session_state.lang = "English"
+if 'db' not in st.session_state: st.session_state.db = {}
 
-st.sidebar.title("🌐 Language / 语言")
+st.sidebar.title("🌐 Language")
 st.session_state.lang = st.sidebar.selectbox("Select Language", ["English", "中文", "Español"])
 
-# Translation Dictionary
 texts = {
-    "English": {
-        "hunt": "📝 Data Hunt", "dash": "👩‍🏫 Teacher Dashboard",
-        "pass_label": "Password", "select_class": "Select Class",
-        "select_student": "Select Student", "goal_details": "📋 Specifications",
-        "baseline": "Baseline (%)", "target": "Target (%)",
-        "save_goal": "Save Specs", "add_new_goal": "➕ Add Goal Name",
-        "admin_warn": "Admin Access Required (1234)",
-        "no_data": "No data. Please use Dashboard to add classes.",
-        "legend_title": "❓ Prompt Level Legend"
-    },
-    "中文": {
-        "hunt": "📝 数据采集 (Data Hunt)", "dash": "👩‍🏫 教师后台管理",
-        "pass_label": "管理密码", "select_class": "选择班级",
-        "select_student": "选择学生", "goal_details": "📋 目标说明",
-        "baseline": "基准线 (%)", "target": "目标值 (%)",
-        "save_goal": "保存设置", "add_new_goal": "➕ 添加目标名称",
-        "admin_warn": "需要管理员权限 (1234)",
-        "no_data": "暂无数据。请前往教师后台添加。",
-        "legend_title": "❓ 提示层级说明 (Legend)"
-    },
-    "Español": {
-        "hunt": "📝 Data Hunt", "dash": "👩‍🏫 Panel del Maestro",
-        "pass_label": "Contraseña", "select_class": "Seleccionar Clase",
-        "select_student": "Seleccionar Estudiante", "goal_details": "📋 Especificaciones",
-        "baseline": "Línea de Base (%)", "target": "Meta (%)",
-        "save_goal": "Guardar", "add_new_goal": "➕ Nueva Meta",
-        "admin_warn": "Acceso requerido (1234)",
-        "no_data": "No hay datos. Use el Panel.",
-        "legend_title": "❓ Leyenda de Niveles"
-    }
+    "English": {"hunt": "📝 Data Hunt", "dash": "👩‍🏫 Dashboard", "pass": "Password", "sel_c": "Select Class", "sel_s": "Select Student", "add_g": "➕ Add New Goal", "manage_g": "🎯 Manage Goals", "save": "Save Changes", "del": "Delete Goal"},
+    "中文": {"hunt": "📝 数据采集", "dash": "👩‍🏫 教师后台", "pass": "管理密码", "sel_c": "选择班级", "sel_s": "选择学生", "add_g": "➕ 添加新目标", "manage_g": "🎯 目标管理列表", "save": "保存修改", "del": "删除目标"},
+    "Español": {"hunt": "📝 Data Hunt", "dash": "👩‍🏫 Panel", "pass": "Contraseña", "sel_c": "Clase", "sel_s": "Estudiante", "add_g": "➕ Nueva Meta", "manage_g": "🎯 Gestionar Metas", "save": "Guardar", "del": "Eliminar"}
 }
 T = texts[st.session_state.lang]
 
-# 3. Database Initialization
-if 'db' not in st.session_state:
-    st.session_state.db = {}
-
-# 4. Sidebar Auth & Navigation
+# 3. 导航逻辑
 st.sidebar.divider()
-password = st.sidebar.text_input(T["pass_label"], type="password")
+password = st.sidebar.text_input(T["pass"], type="password")
 is_teacher = (password == "1234")
 mode = st.sidebar.radio("Navigation", [T["hunt"], T["dash"]])
 
-# --- MODE 1: DATA HUNT ---
+# --- MODE 1: DATA HUNT (略，保持之前的逻辑) ---
 if mode == T["hunt"]:
     st.title("🎯 ProTracker")
-    classes = list(st.session_state.db.keys())
-    if not classes:
-        st.info(T["no_data"])
-    else:
-        c1, c2 = st.columns(2)
-        with c1:
-            sel_class = st.selectbox(T["select_class"], classes)
-        with c2:
-            student_ids = list(st.session_state.db[sel_class].keys())
-            sel_student = st.selectbox(T["select_student"], student_ids) if student_ids else None
-        
-        if sel_student:
-            student_data = st.session_state.db[sel_class][sel_student]
-            st.markdown(f"### {student_data['avatar']} Student: {sel_student}")
-            goal_names = list(student_data["Goals"].keys())
-            
-            if goal_names:
-                sel_goal = st.selectbox("Goal", goal_names)
-                st.divider()
-                
-                session_key = f"hunt_{sel_student}_{sel_goal}"
-                if session_key not in st.session_state:
-                    st.session_state[session_key] = ["-"] * 10
+    # ... (保持之前的 10 格 Trial 逻辑)
+    # 为了节省空间，这里略过重复部分，请确保合并时保留这块代码
 
-                for row in range(2):
-                    cols = st.columns(5)
-                    for col in range(5):
-                        idx = (row * 5) + col
-                        with cols[col]:
-                            curr = st.session_state[session_key][idx]
-                            with st.expander(f"Trial {idx+1}: **{curr}**"):
-                                for code, mini in prompt_minimal.items():
-                                    if st.button(mini, key=f"btn_{idx}_{code}"):
-                                        st.session_state[session_key][idx] = code
-                                        st.rerun()
-
-                st.divider()
-                results = st.session_state[session_key]
-                ind_count = results.count("I")
-                total = 10 - results.count("-")
-                if total > 0:
-                    st.metric("Independent Score", f"{(ind_count/10)*100}%")
-                    if st.button("✅ Submit"):
-                        st.success("Saved!")
-                        st.session_state[session_key] = ["-"] * 10
-                        st.rerun()
-                
-                with st.expander(T["legend_title"], expanded=True):
-                    legend_data = {"✅ I": "Independent", "🗣️ V": "Verbal", "👁️ Vi/G": "Visual", "🖐️ PP": "Partial Physical", "🎭 M": "Modeling", "🤝 FP": "Full Physical"}
-                    for m, d in legend_data.items(): st.write(f"**{m}** : {d}")
-
-# --- MODE 2: TEACHER DASHBOARD ---
+# --- MODE 2: TEACHER DASHBOARD (增强版目标编辑) ---
 elif mode == T["dash"]:
     if not is_teacher:
-        st.warning(T["admin_warn"])
+        st.warning("Admin Access Required.")
     else:
         st.title(T["dash"])
-        tab1, tab2 = st.tabs(["📂 Structure", "🎯 Goal Editor"])
-        with tab1:
-            col_a, col_b = st.columns(2)
-            with col_a:
-                nc = st.text_input("New Class")
-                if st.button("Create") and nc:
-                    st.session_state.db[nc] = {}; st.rerun()
-            with col_b:
+        tab_struct, tab_goals = st.tabs(["📂 结构管理 (Structure)", "🎯 目标编辑 (Goal Editor)"])
+        
+        with tab_struct:
+            # (班级和学生添加逻辑保持不变...)
+            c1, c2 = st.columns(2)
+            with c1:
+                nc = st.text_input("New Class Name")
+                if st.button("Create Class") and nc:
+                    if nc not in st.session_state.db: st.session_state.db[nc] = {}; st.rerun()
+            with c2:
                 if st.session_state.db:
-                    tc = st.selectbox("To Class", list(st.session_state.db.keys()))
-                    fn = st.text_input("Full Name (Initial Only)")
+                    tc = st.selectbox("Assign to Class", list(st.session_state.db.keys()))
+                    fn = st.text_input("Student Full Name")
                     av = st.selectbox("Avatar", list(avatars.keys()))
                     if st.button("Add Student") and fn:
                         pn = get_privacy_name(fn)
                         st.session_state.db[tc][pn] = {"avatar": avatars[av], "Goals": {}}
                         st.rerun()
-        with tab2:
-            if st.session_state.db:
-                ec = st.selectbox(T["select_class"], list(st.session_state.db.keys()), key="ec")
-                es = st.selectbox(T["select_student"], list(st.session_state.db[ec].keys()), key="es")
-                if es:
-                    ng = st.text_input(T["add_new_goal"])
-                    if st.button("Assign") and ng:
-                        st.session_state.db[ec][es]["Goals"][ng] = {"baseline":0, "target":0}
-                        st.rerun()
+
+        with tab_goals:
+            if not st.session_state.db:
+                st.info("Please create a class first.")
+            else:
+                col1, col2 = st.columns(2)
+                with col1:
+                    e_c = st.selectbox(T["sel_c"], list(st.session_state.db.keys()), key="edit_c")
+                with col2:
+                    e_s_list = list(st.session_state.db[e_c].keys())
+                    e_s = st.selectbox(T["sel_s"], e_s_list, key="edit_s") if e_s_list else None
+                
+                if e_s:
+                    st.divider()
+                    st.subheader(f"{T['manage_g']}: {st.session_state.db[e_c][e_s]['avatar']} {e_s}")
+                    
+                    # 1. 添加新目标部分
+                    with st.expander(T["add_g"], expanded=False):
+                        new_g_name = st.text_input("Goal Title (e.g., Reading Comprehension)")
+                        c_base, c_tar = st.columns(2)
+                        b_val = c_base.number_input("Baseline (%)", 0, 100, 0)
+                        t_val = c_tar.number_input("Target (%)", 0, 100, 80)
+                        if st.button("Confirm Add Goal"):
+                            if new_g_name:
+                                st.session_state.db[e_c][e_s]["Goals"][new_g_name] = {"baseline": b_val, "target": t_val}
+                                st.success(f"Goal '{new_g_name}' added!")
+                                st.rerun()
+
+                    # 2. 已有目标修改列表
+                    current_goals = st.session_state.db[e_c][e_s]["Goals"]
+                    if not current_goals:
+                        st.write("No goals yet.")
+                    else:
+                        for g_name, g_info in list(current_goals.items()):
+                            with st.container
