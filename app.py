@@ -105,4 +105,29 @@ elif mode == "👩‍🏫 Teacher Dashboard":
         st.title("⚙️ Teacher Administration")
         tab_struct, tab_goals = st.tabs(["📂 Structure", "🎯 Goal Editor"])
         
-        with tab_
+        with tab_struct:
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.subheader("Add Class")
+                nc = st.text_input("New Class Name")
+                if st.button("Create"):
+                    if nc: st.session_state.db[nc] = {}; st.rerun()
+            with col_b:
+                st.subheader("Add Student")
+                if st.session_state.db:
+                    tc = st.selectbox("To Class", list(st.session_state.db.keys()))
+                    ns = st.text_input("Full Name")
+                    if st.button("Add"):
+                        ini = get_initials(ns)
+                        st.session_state.db[tc][ini] = {"Goals": {}}
+                        st.rerun()
+        
+        with tab_goals:
+            if st.session_state.db:
+                e_c = st.selectbox("Class", list(st.session_state.db.keys()), key="ec")
+                e_s = st.selectbox("Student", list(st.session_state.db[e_c].keys()), key="es")
+                if e_s:
+                    ng = st.text_input("Add Goal Name")
+                    if st.button("Add Goal"):
+                        st.session_state.db[e_c][e_s]["Goals"][ng] = {"baseline":0, "target":0}
+                        st.rerun()
