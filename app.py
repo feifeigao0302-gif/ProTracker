@@ -105,3 +105,68 @@ if mode == T["hunt"]:
             goal_names = list(student_data["Goals"].keys())
             if goal_names:
                 sel_goal = st.selectbox(T["current_goals"], goal_names)
+                details = student_data["Goals"][sel_goal]
+                st.info(f"**{T['goal_details']}**: Baseline: {details['baseline']}% | Target: {details['target']}%")
+                with st.form("data_entry", clear_on_submit=True):
+                    val = st.number_input("Score (%)", 0, 100, 80)
+                    if st.form_submit_button("Submit"):
+                        st.success("Recorded!")
+            else:
+                st.warning("No goals found.")
+
+# --- MODE 2: TEACHER DASHBOARD ---
+elif mode == T["dash"]:
+    if not is_teacher:
+        st.warning(T["admin_warn"])
+    else:
+        st.title(T["dash"])
+        tab_struct, tab_goals = st.tabs(["📂 Structure", "🎯 Goal Editor"])
+        
+        with tab_struct:
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.subheader("Add Class")
+                new_c = st.text_input("Class Name")
+                if st.button("Create Class") and new_c:
+                    if new_c not in st.session_state.db:
+                        st.session_state.db[new_c] = {}
+                        st.rerun()
+            with col_b:
+                st.subheader("Add Student")
+                if st.session_state.db:
+                    target_c = st.selectbox("Assign to Class", list(st.session_state.db.keys()))
+                    new_s_full = st.text_input("Enter Full Name (Will be converted to Initials)")
+                    if st.button("Add Student") and new_s_full:
+                        initials = get_initials(new_s_full)
+                        if initials not in st.session_state.db[target_c]:
+                            st.session_state.db[target_c][initials] = {"Goals": {}}
+                            st.success(f"Added as: {initials}")
+                            st.rerun()
+
+        with tab_goals:
+            st.subheader("Edit IEP Goals")
+            if st.session_state.db:
+                e_class = st.selectbox(T["select_class"], list(st.session_state.db.keys()), key="e_c")
+                e_students = list(st.session_state.db[e_class].keys())
+                if e_students:
+                    e_student = st.selectbox(T["select_student"], e_students, key="e_s")
+                    new_g = st.text_input(T["add_new_goal"])
+                    if st.button("Add Goal Name") and new_g:
+                        st.session_state.db[e_class][e_student]["Goals"][new_g] = {"baseline":0, "target":0, "criteria":"", "method":""}
+                        st.rerun()
+                    
+                    goals = st.session_state.db[e_class][e_student]["Goals"]
+                    if goals:
+                        target_g = st.selectbox("Select Goal to Edit", list(goals.keys()))
+                        g_info = goals[target_g]
+                        with st.expander(f"Editing: {target_g}", expanded=True):
+                            c1, c2 = st.columns(2)
+                            with c1:
+                                b_v = st.number_input(T["baseline"], value=int(g_info['baseline']))
+                                t_v = st.number_input(T["target"], value=int(g_info['target']))
+                            with c2:
+                                c_v = st.text_input(T["criteria"], value=g_info['criteria'])
+                                m_v = st.text_input(T["method"], value=g_info['method'])
+                            if st.button(T["save_goal"]):
+                                st.session_state.db[e_class][e_student]["Goals"][target_g] = {"baseline": b_v, "target": t_v, "criteria": c_v, "method": m_v}
+                                st.success("Updated!")
