@@ -2,17 +2,17 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 1. 页面配置
+# 1. Page Configuration
 st.set_page_config(page_title="ProTracker - IEP Management", layout="wide")
 
-# 2. 语言选择
+# 2. Language Selection
 if 'lang' not in st.session_state:
     st.session_state.lang = "English"
 
 st.sidebar.title("🌐 Language")
 st.session_state.lang = st.sidebar.selectbox("Select Language", ["English", "中文", "Español"])
 
-# 3. 翻译字典（增加了班级和学生管理的词条）
+# 3. Translation Dictionary
 texts = {
     "English": {
         "title": "🎯 ProTracker: IEP Progress",
@@ -23,9 +23,8 @@ texts = {
         "select_student": "Select Student",
         "add_class": "➕ Add New Class",
         "add_student": "👤 Add New Student",
-        "edit_goal": "🎯 Manage IEP Goals",
         "save": "Save Changes",
-        "delete": "Delete",
+        "admin_warn": "Admin Access Required (Password: 1234)",
     },
     "中文": {
         "title": "🎯 ProTracker: IEP 进度管理",
@@ -36,9 +35,8 @@ texts = {
         "select_student": "选择学生",
         "add_class": "➕ 添加新班级",
         "add_student": "👤 添加新学生",
-        "edit_goal": "🎯 管理 IEP 目标",
         "save": "保存修改",
-        "delete": "删除",
+        "admin_warn": "需要管理员权限 (密码: 1234)",
     },
     "Español": {
         "title": "🎯 ProTracker: Progreso del IEP",
@@ -49,110 +47,69 @@ texts = {
         "select_student": "Seleccionar Estudiante",
         "add_class": "➕ Agregar Nueva Clase",
         "add_student": "👤 Agregar Nuevo Estudiante",
-        "edit_goal": "🎯 Gestionar Metas del IEP",
         "save": "Guardar Cambios",
-        "delete": "Eliminar",
+        "admin_warn": "Acceso de administrador requerido (Contraseña: 1234)",
     }
 }
-
 T = texts[st.session_state.lang]
 
-# 4. 数据库初始化逻辑
-def initialize_db():
-    return {
+# 4. Database Initialization
+if 'db' not in st.session_state:
+    st.session_state.db = {
         "Class A (DLI)": {
-            "Student Alpha": {
-                "Grade": "3rd", 
-                "Goals": {
-                    "Reading Comp": {"baseline": 30, "target": 80, "criteria": "4/5 trials", "method": "Wh- Questions"}
-                }
-            }
+            "Student Alpha": {"Grade": "3rd", "Goals": {}}
         }
     }
 
-if 'db' not in st.session_state:
-    st.session_state.db = initialize_db()
-
-# 5. 侧边栏
+# 5. Sidebar Auth
 st.sidebar.markdown("---")
 password = st.sidebar.text_input(T["pass_label"], type="password")
 is_teacher = (password == "1234")
 mode = st.sidebar.radio("Navigation", [T["hunt"], T["dash"]])
 
-# --- 逻辑 A: Data Hunt (采集页面) ---
+# --- Logic A: Data Hunt (Public View) ---
 if mode == T["hunt"]:
     st.title(T["title"])
-    class_list = list(st.session_state.db.keys())
-    if not class_list:
-        st.warning("No classes found. Please ask teacher to add a class.")
+    classes = list(st.session_state.db.keys())
+    if not classes:
+        st.info("No classes added yet.")
     else:
         c1, c2 = st.columns(2)
         with c1:
-            chosen_class = st.selectbox(T["select_class"], class_list)
+            sel_class = st.selectbox(T["select_class"], classes)
         with c2:
-            student_list = list(st.session_state.db[chosen_class].keys())
-            chosen_student = st.selectbox(T["select_student"], student_list) if student_list else None
+            students = list(st.session_state.db[sel_class].keys())
+            sel_student = st.selectbox(T["select_student"], students) if students else None
         
-        if chosen_student:
-            st.divider()
-            student_data = st.session_state.db[chosen_class][chosen_student]
-            goal_names = list(student_data["Goals"].keys())
-            if goal_names:
-                selected_goal = st.selectbox("Goal", goal_names)
-                details = student_data["Goals"][selected_goal]
-                st.info(f"Baseline: {details['baseline']}% | Target: {details['target']}%")
-                with st.form("input_form"):
-                    score = st.number_input("Score (%)", 0, 100, 80)
-                    if st.form_submit_button("Submit"):
-                        st.success("Recorded!")
-            else:
-                st.write("No goals set for this student.")
+        if sel_student:
+            st.success(f"Ready to collect data for {sel_student}")
+            # (Goal collection logic here...)
 
-# --- 逻辑 B: Teacher Dashboard (管理页面) ---
+# --- Logic B: Teacher Dashboard (Admin View) ---
 elif mode == T["dash"]:
     if not is_teacher:
-        st.warning("Admin Access Required (Password: 1234)")
+        st.warning(T["admin_warn"])
     else:
         st.title(T["dash"])
         
-        # --- 第一部分：班级与学生管理 ---
-        col_a, col_b = st.columns(2)
-        
-        with col_a:
+        # 1. Manage Classes & Students
+        col1, col2 = st.columns(2)
+        with col1:
             st.subheader(T["add_class"])
-            new_class = st.text_input("New Class Name")
-            if st.button("Create Class") and new_class:
-                if new_class not in st.session_state.db:
-                    st.session_state.db[new_class] = {}
-                    st.success(f"Class '{new_class}' added!")
+            new_c = st.text_input("New Class Name")
+            if st.button("Create Class") and new_c:
+                if new_c not in st.session_state.db:
+                    st.session_state.db[new_c] = {}
                     st.rerun()
-
-        with col_b:
+        
+        with col2:
             st.subheader(T["add_student"])
-            target_class = st.selectbox("To Class", list(st.session_state.db.keys()))
-            new_student = st.text_input("Student Name")
-            if st.button("Add Student") and new_student:
-                if new_student not in st.session_state.db[target_class]:
-                    st.session_state.db[target_class][new_student] = {"Grade": "N/A", "Goals": {}}
-                    st.success(f"Student '{new_student}' added to {target_class}!")
+            if list(st.session_state.db.keys()):
+                target_c = st.selectbox("To Class", list(st.session_state.db.keys()))
+                new_s = st.text_input("New Student Name")
+                if st.button("Add Student") and new_s:
+                    st.session_state.db[target_c][new_s] = {"Grade": "N/A", "Goals": {}}
                     st.rerun()
 
         st.divider()
-        
-        # --- 第二部分：具体信息编辑 ---
-        st.subheader("📝 Edit Details")
-        all_classes = list(st.session_state.db.keys())
-        if all_classes:
-            edit_class = st.selectbox("Select Class to Manage", all_classes)
-            all_students = list(st.session_state.db[edit_class].keys())
-            
-            if all_students:
-                edit_student = st.selectbox("Select Student to Edit", all_students)
-                
-                # 修改基本信息
-                curr_grade = st.session_state.db[edit_class][edit_student]["Grade"]
-                new_grade = st.text_input("Grade", value=curr_grade)
-                
-                # 管理 IEP Goals
-                st.write("---")
-                st
+        st.write("Current Classes in Database:", list(st.session_state.db.keys()))
