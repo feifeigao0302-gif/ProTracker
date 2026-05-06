@@ -25,9 +25,10 @@ ProTracker is designed with a **3-tier navigation logic** to minimize cognitive 
    - **Data Hunt**: A "zero-typing" entry interface optimized for rapid, real-time data collection in busy classroom environments.
    - **Data Analyst**: Instant visualization of student progress. It transforms raw data into trend lines and achievement curves using Python-based analytics to support data-driven instruction.
 ## Tech Stack
-- **Data Management**: SQL
-- **Visualization**: Tableau / Power BI
-- **Analytics/Development**: Python (Planned)
+- **Frontend**: Streamlit / Flask (Planned for rapid prototyping)
+- **Data Management**: SQL (SQLite for local storage, PostgreSQL for cloud)
+- **Analytics**: Python (Pandas, NumPy for data processing)
+- **Visualization**: Plotly (In-app) / Tableau (Strategic reporting)
 ## Business Analytics Goals
 - Improve the precision and efficacy of special education interventions.
 - Provide a clear ROI (Return on Investment) model for pedagogical management.
