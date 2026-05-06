@@ -4,35 +4,41 @@ import pandas as pd
 # 1. Page Configuration
 st.set_page_config(page_title="ProTracker - IEP Management", layout="wide")
 
-# Helper function to get initials
-def get_initials(name):
-    return "".join([part[0].upper() for part in name.split() if part])
+# Helper function to get initials/privacy name
+def get_privacy_name(name):
+    parts = name.split()
+    if len(parts) >= 2:
+        return f"{parts[0][0]}{parts[-1][0]}".upper() # First and Last initial
+    return name[:2].upper() # First two letters if only one name
+
+# Cartoon Avatar Library (Using Emojis as lightweight avatars)
+avatars = {
+    "Robot": "🤖", "Panda": "🐼", "Tiger": "🐯", "Fox": "🦊", 
+    "Koala": "🐨", "Frog": "🐸", "Unicorn": "🦄", "Dragon": "🐲",
+    "Wizard": "🧙", "Rocket": "🚀", "Star": "⭐", "Alien": "👽"
+}
 
 # 2. Prompt Levels Definition
 prompt_options = {
-    "I": "Independent",
-    "V": "Verbal Prompt",
-    "Vi/G": "Visual / Gestural",
-    "PP": "Partial Physical",
-    "M": "Modeling",
-    "FP": "Full Physical"
+    "I": "Independent", "V": "Verbal Prompt", "Vi/G": "Visual / Gestural",
+    "PP": "Partial Physical", "M": "Modeling", "FP": "Full Physical"
 }
 
-# 3. Database & Session State Initialization
+# 3. Database Initialization
 if 'db' not in st.session_state:
     st.session_state.db = {}
 
-# 4. Sidebar Auth & Navigation
+# 4. Sidebar Navigation
 st.sidebar.title("🌐 ProTracker")
 password = st.sidebar.text_input("Password", type="password")
 is_teacher = (password == "1234")
 mode = st.sidebar.radio("Navigation", ["📝 Data Hunt", "👩‍🏫 Teacher Dashboard"])
 
-# --- MODE 1: DATA HUNT (10-Trial Grid) ---
+# --- MODE 1: DATA HUNT ---
 if mode == "📝 Data Hunt":
     st.title("🎯 IEP Data Hunt")
-    
     classes = list(st.session_state.db.keys())
+    
     if not classes:
         st.info("No data found. Please add classes and students in the Dashboard.")
     else:
@@ -40,64 +46,51 @@ if mode == "📝 Data Hunt":
         with c1:
             sel_class = st.selectbox("Select Class", classes)
         with c2:
-            students = list(st.session_state.db[sel_class].keys())
-            sel_student = st.selectbox("Select Student", students) if students else None
+            student_ids = list(st.session_state.db[sel_class].keys())
+            sel_student = st.selectbox("Select Student (ID)", student_ids) if student_ids else None
         
         if sel_student:
-            student_data = st.session_state.db[sel_class][sel_student]
-            goal_names = list(student_data["Goals"].keys())
+            s_data = st.session_state.db[sel_class][sel_student]
+            st.markdown(f"### {s_data['avatar']} Student: {sel_student}")
             
-            if goal_names:
-                sel_goal = st.selectbox("Select IEP Goal", goal_names)
+            goals = list(s_data["Goals"].keys())
+            if goals:
+                sel_goal = st.selectbox("Select IEP Goal", goals)
                 st.divider()
                 
-                st.subheader(f"Data Collection for: {sel_goal}")
-                
-                # Unique key for this specific session
+                # 10-Trial Logic
                 session_key = f"hunt_{sel_student}_{sel_goal}"
                 if session_key not in st.session_state:
                     st.session_state[session_key] = ["-"] * 10
 
-                # Render the 10-Trial Grid
-                st.write("Click a trial to select the prompt level:")
-                
-                # We use 5 columns x 2 rows
+                st.write("Record Prompt Levels:")
                 for row in range(2):
                     cols = st.columns(5)
                     for col in range(5):
                         idx = (row * 5) + col
                         with cols[col]:
-                            # Display current status in the button label
-                            current_status = st.session_state[session_key][idx]
-                            # Using an expander for each trial to act as a "popup" menu
-                            with st.expander(f"Trial {idx+1}: **{current_status}**"):
+                            curr = st.session_state[session_key][idx]
+                            with st.expander(f"Trial {idx+1}: **{curr}**"):
                                 for code, label in prompt_options.items():
                                     if st.button(f"{code} - {label}", key=f"btn_{idx}_{code}"):
                                         st.session_state[session_key][idx] = code
                                         st.rerun()
 
                 st.divider()
-                
-                # --- Real-time Stats ---
                 trial_results = st.session_state[session_key]
                 ind_count = trial_results.count("I")
-                total_taken = 10 - trial_results.count("-")
+                total = 10 - trial_results.count("-")
                 
-                s1, s2, s3 = st.columns(3)
-                if total_taken > 0:
-                    score = (ind_count / 10) * 100
-                    s1.metric("Independent Score", f"{score}%")
-                    s2.metric("Trials Logged", f"{total_taken}/10")
-                    s3.progress(total_taken / 10)
-                
-                if st.button("✅ Submit and Clear"):
-                    st.success("Session saved successfully!")
-                    st.session_state[session_key] = ["-"] * 10
-                    st.rerun()
+                if total > 0:
+                    st.metric("Independent Score", f"{(ind_count/10)*100}%")
+                    if st.button("✅ Submit Session"):
+                        st.success("Session saved!")
+                        st.session_state[session_key] = ["-"] * 10
+                        st.rerun()
             else:
-                st.warning("Please add goals for this student first.")
+                st.warning("No goals assigned.")
 
-# --- MODE 2: TEACHER DASHBOARD (Admin Logic) ---
+# --- MODE 2: TEACHER DASHBOARD ---
 elif mode == "👩‍🏫 Teacher Dashboard":
     if not is_teacher:
         st.warning("Admin Access Required.")
@@ -112,22 +105,30 @@ elif mode == "👩‍🏫 Teacher Dashboard":
                 nc = st.text_input("New Class Name")
                 if st.button("Create"):
                     if nc: st.session_state.db[nc] = {}; st.rerun()
+            
             with col_b:
-                st.subheader("Add Student")
+                st.subheader("Add Student (Private)")
                 if st.session_state.db:
                     tc = st.selectbox("To Class", list(st.session_state.db.keys()))
-                    ns = st.text_input("Full Name")
-                    if st.button("Add"):
-                        ini = get_initials(ns)
-                        st.session_state.db[tc][ini] = {"Goals": {}}
-                        st.rerun()
-        
+                    raw_name = st.text_input("Name (Will be stored as Initials)")
+                    sel_avatar = st.selectbox("Choose Cartoon Avatar", list(avatars.keys()))
+                    
+                    if st.button("Add Student"):
+                        if raw_name:
+                            p_name = get_privacy_name(raw_name)
+                            st.session_state.db[tc][p_name] = {
+                                "avatar": avatars[sel_avatar],
+                                "Goals": {}
+                            }
+                            st.success(f"Added as {p_name} {avatars[sel_avatar]}")
+                            st.rerun()
+
         with tab_goals:
             if st.session_state.db:
                 e_c = st.selectbox("Class", list(st.session_state.db.keys()), key="ec")
                 e_s = st.selectbox("Student", list(st.session_state.db[e_c].keys()), key="es")
                 if e_s:
-                    ng = st.text_input("Add Goal Name")
-                    if st.button("Add Goal"):
-                        st.session_state.db[e_c][e_s]["Goals"][ng] = {"baseline":0, "target":0}
+                    ng = st.text_input("New Goal Name")
+                    if st.button("Assign Goal"):
+                        st.session_state.db[e_c][e_s]["Goals"][ng] = {"baseline":0}
                         st.rerun()
