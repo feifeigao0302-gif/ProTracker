@@ -1,30 +1,34 @@
 import streamlit as st
 import pandas as pd
 
-# 1. 页面配置
+# 1. Page Configuration
 st.set_page_config(page_title="ProTracker - IEP Management", layout="wide")
 
-# 2. 语言与提示层级定义
-prompt_levels = {
-    "None": "⚪",
-    "Independent (I)": "✅",
-    "Verbal Prompt (V)": "🗣️",
-    "Visual / Gestural Prompt (Vi/G)": "👁️",
-    "Gestural/Partial Physical (PP)": "🖐️",
-    "Modeling (M)": "🎭",
-    "Physical Guidance / Full Physical (FP)": "🤝"
-}
-level_list = list(prompt_levels.keys())
+# Helper function to get initials
+def get_initials(name):
+    return "".join([part[0].upper() for part in name.split() if part])
 
-# 3. 数据库初始化
+# 2. Prompt Levels Definition
+prompt_options = {
+    "I": "Independent",
+    "V": "Verbal Prompt",
+    "Vi/G": "Visual / Gestural",
+    "PP": "Partial Physical",
+    "M": "Modeling",
+    "FP": "Full Physical"
+}
+
+# 3. Database & Session State Initialization
 if 'db' not in st.session_state:
     st.session_state.db = {}
 
-# 4. 侧边栏导航
-st.sidebar.title("🚀 ProTracker")
+# 4. Sidebar Auth & Navigation
+st.sidebar.title("🌐 ProTracker")
+password = st.sidebar.text_input("Password", type="password")
+is_teacher = (password == "1234")
 mode = st.sidebar.radio("Navigation", ["📝 Data Hunt", "👩‍🏫 Teacher Dashboard"])
 
-# --- MODE 1: DATA HUNT (10-Grid System) ---
+# --- MODE 1: DATA HUNT (10-Trial Grid) ---
 if mode == "📝 Data Hunt":
     st.title("🎯 IEP Data Hunt")
     
@@ -47,49 +51,58 @@ if mode == "📝 Data Hunt":
                 sel_goal = st.selectbox("Select IEP Goal", goal_names)
                 st.divider()
                 
-                st.subheader(f"Trials for: {sel_goal}")
-                st.write("Click each grid to record the prompt level used.")
-
-                # 创建 10 个格子的状态存储
-                grid_key = f"grid_{sel_student}_{sel_goal}"
-                if grid_key not in st.session_state:
-                    st.session_state[grid_key] = ["None"] * 10
-
-                # 绘制 5x2 的网格
-                cols = st.columns(5)
-                for i in range(10):
-                    with cols[i % 5]:
-                        current_val = st.session_state[grid_key][i]
-                        # 点击按钮切换 Prompt Level
-                        if st.button(f"Trial {i+1}\n\n{prompt_levels[current_val]}", key=f"btn_{i}"):
-                            # 循环切换 index
-                            current_idx = level_list.index(current_val)
-                            next_idx = (current_idx + 1) % len(level_list)
-                            st.session_state[grid_key][i] = level_list[next_idx]
-                            st.rerun()
+                st.subheader(f"Data Collection for: {sel_goal}")
                 
+                # Unique key for this specific session
+                session_key = f"hunt_{sel_student}_{sel_goal}"
+                if session_key not in st.session_state:
+                    st.session_state[session_key] = ["-"] * 10
+
+                # Render the 10-Trial Grid
+                st.write("Click a trial to select the prompt level:")
+                
+                # We use 5 columns x 2 rows
+                for row in range(2):
+                    cols = st.columns(5)
+                    for col in range(5):
+                        idx = (row * 5) + col
+                        with cols[col]:
+                            # Display current status in the button label
+                            current_status = st.session_state[session_key][idx]
+                            # Using an expander for each trial to act as a "popup" menu
+                            with st.expander(f"Trial {idx+1}: **{current_status}**"):
+                                for code, label in prompt_options.items():
+                                    if st.button(f"{code} - {label}", key=f"btn_{idx}_{code}"):
+                                        st.session_state[session_key][idx] = code
+                                        st.rerun()
+
                 st.divider()
                 
-                # 数据统计
-                results = st.session_state[grid_key]
-                ind_count = results.count("Independent (I)")
-                total_trials = 10 - results.count("None")
+                # --- Real-time Stats ---
+                trial_results = st.session_state[session_key]
+                ind_count = trial_results.count("I")
+                total_taken = 10 - trial_results.count("-")
                 
-                col1, col2, col3 = st.columns(3)
-                col1.metric("Independent Score", f"{(ind_count/10)*100 if total_trials > 0 else 0}%")
-                col2.metric("Trials Completed", f"{total_trials}/10")
+                s1, s2, s3 = st.columns(3)
+                if total_taken > 0:
+                    score = (ind_count / 10) * 100
+                    s1.metric("Independent Score", f"{score}%")
+                    s2.metric("Trials Logged", f"{total_taken}/10")
+                    s3.progress(total_taken / 10)
                 
-                with st.expander("View Legend (Prompt Levels)"):
-                    for k, v in prompt_levels.items():
-                        st.write(f"{v} : {k}")
-
-                if st.button("✅ Submit Final Session Data"):
-                    st.success("Session data saved to history!")
-                    # 这里可以添加保存到数据库的逻辑
-                    st.session_state[grid_key] = ["None"] * 10 # 重置
+                if st.button("✅ Submit and Clear"):
+                    st.success("Session saved successfully!")
+                    st.session_state[session_key] = ["-"] * 10
                     st.rerun()
+            else:
+                st.warning("Please add goals for this student first.")
 
-# --- MODE 2: TEACHER DASHBOARD (保持不变) ---
+# --- MODE 2: TEACHER DASHBOARD (Admin Logic) ---
 elif mode == "👩‍🏫 Teacher Dashboard":
-    st.title("⚙️ Teacher Administration")
-    # ... (保留你之前的后台添加班级/学生/目标的逻辑)
+    if not is_teacher:
+        st.warning("Admin Access Required.")
+    else:
+        st.title("⚙️ Teacher Administration")
+        tab_struct, tab_goals = st.tabs(["📂 Structure", "🎯 Goal Editor"])
+        
+        with tab_
