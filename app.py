@@ -12,7 +12,7 @@ if 'lang' not in st.session_state:
 st.sidebar.title("🌐 Language")
 st.session_state.lang = st.sidebar.selectbox("Select Language", ["English", "中文", "Español"])
 
-# 3. Enhanced Translation Dictionary (Added Goal Details)
+# 3. Translation Dictionary
 texts = {
     "English": {
         "title": "🎯 ProTracker: IEP Progress",
@@ -72,10 +72,9 @@ texts = {
 
 T = texts[st.session_state.lang]
 
-# 4. Professional Database Structure
-if 'db' not in st.session_state:
-    # We store goals as a dictionary to hold their specific details
-    st.session_state.db = {
+# 4. Professional Database Structure (With Safety Check)
+def initialize_db():
+    return {
         "Class A (DLI)": {
             "Student Alpha": {
                 "Grade": "3rd", 
@@ -86,6 +85,9 @@ if 'db' not in st.session_state:
             }
         }
     }
+
+if 'db' not in st.session_state or not isinstance(st.session_state.db, dict):
+    st.session_state.db = initialize_db()
 
 # 5. Sidebar Auth & Navigation
 st.sidebar.markdown("---")
@@ -98,37 +100,41 @@ mode = st.sidebar.radio("Navigation", [T["hunt"], T["dash"]])
 if mode == T["hunt"]:
     st.title(T["title"])
     c1, c2 = st.columns(2)
+    
+    # Use generic list for selectbox to avoid key errors
+    class_list = list(st.session_state.db.keys())
     with c1:
-        chosen_class = st.selectbox(T["select_class"], list(st.session_state.db.keys()))
+        chosen_class = st.selectbox(T["select_class"], class_list)
+    
     with c2:
-        students = list(st.session_state.db[chosen_class].keys())
-        chosen_student = st.selectbox(T["select_student"], students)
+        student_list = list(st.session_state.db[chosen_class].keys())
+        chosen_student = st.selectbox(T["select_student"], student_list)
     
     st.divider()
     
-    # Display Student Info
-    student_data = st.session_state.db[chosen_class][chosen_student]
-    goal_names = list(student_data["Goals"].keys())
-    selected_goal = st.selectbox(T["current_goals"], goal_names)
-    
-    # Show Specific Goal Info for the Data Collector to see
-    details = student_data["Goals"][selected_goal]
-    st.info(f"**{T['goal_details']}**: Baseline: {details['baseline']}% | Target: {details['target']}% | Method: {details['method']}")
+    # Extra Safety Check before accessing Goals
+    student_data = st.session_state.db[chosen_class].get(chosen_student, {})
+    if "Goals" in student_data:
+        goal_names = list(student_data["Goals"].keys())
+        selected_goal = st.selectbox(T["current_goals"], goal_names)
+        
+        details = student_data["Goals"][selected_goal]
+        st.info(f"**{T['goal_details']}**: Baseline: {details['baseline']}% | Target: {details['target']}% | Method: {details['method']}")
 
-    with st.form("input_form"):
-        score = st.number_input("Performance (%)", 0, 100, 80)
-        note = st.text_input("Observations")
-        if st.form_submit_button("Submit"):
-            st.success("Successfully Recorded!")
+        with st.form("input_form"):
+            score = st.number_input("Performance (%)", 0, 100, 80)
+            note = st.text_input("Observations")
+            if st.form_submit_button("Submit"):
+                st.success("Successfully Recorded!")
+    else:
+        st.error("Student data structure error. Please reset app.")
 
 # --- Logic B: Teacher Dashboard (Admin View) ---
 elif mode == T["dash"]:
     if not is_teacher:
-        st.warning("Admin Access Required")
+        st.warning(T["admin_warn"] if "admin_warn" in T else "Admin Access Required")
     else:
         st.title(T["dash"])
-        
-        # Select Student to manage
         t_class = st.selectbox(T["select_class"], list(st.session_state.db.keys()))
         t_student = st.selectbox(T["select_student"], list(st.session_state.db[t_class].keys()))
         
@@ -146,18 +152,19 @@ elif mode == T["dash"]:
 
         # 2. EDIT GOAL DETAILS
         st.subheader(T["goal_details"])
-        edit_goal = st.selectbox("Select Goal to Edit Details", list(st.session_state.db[t_class][t_student]["Goals"].keys()))
+        available_goals = list(st.session_state.db[t_class][t_student]["Goals"].keys())
+        edit_goal = st.selectbox("Select Goal to Edit Details", available_goals)
         
         g_data = st.session_state.db[t_class][t_student]["Goals"][edit_goal]
         
         with st.container(border=True):
             col1, col2 = st.columns(2)
             with col1:
-                b_line = st.number_input(T["baseline"], value=g_data["baseline"])
-                t_line = st.number_input(T["target"], value=g_data["target"])
+                b_line = st.number_input(T["baseline"], value=g_data.get("baseline", 0))
+                t_line = st.number_input(T["target"], value=g_data.get("target", 0))
             with col2:
-                crit = st.text_input(T["criteria"], value=g_data["criteria"])
-                meth = st.text_input(T["method"], value=g_data["method"])
+                crit = st.text_input(T["criteria"], value=g_data.get("criteria", ""))
+                meth = st.text_input(T["method"], value=g_data.get("method", ""))
             
             if st.button(T["save_goal"]):
                 st.session_state.db[t_class][t_student]["Goals"][edit_goal] = {
