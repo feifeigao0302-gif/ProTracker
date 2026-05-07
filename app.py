@@ -17,7 +17,7 @@ avatars = {"Robot": "🤖", "Panda": "🐼", "Tiger": "🐯", "Fox": "🦊", "Ko
 prompt_minimal = {"I": "✅ I", "V": "🗣️ V", "Vi/G": "👁️ Vi/G", "PP": "🖐️ PP", "M": "🎭 M", "FP": "🤝 FP"}
 
 # 2. 初始化
-if 'lang' not in st.session_state: st.session_state.lang = "中文"
+if 'lang' not in st.session_state: st.session_state.lang = "English"
 if 'db' not in st.session_state: st.session_state.db = {}
 
 # 侧边栏：语言与导航
